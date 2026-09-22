@@ -120,8 +120,6 @@ The UCI executable can also be selected as an engine in a compatible chess GUI. 
 ## Current limitations and next steps
 
 - Draw tracking is not complete: the half-move clock and Zobrist hash must be updated as moves are made before fifty-move and repetition detection can be enabled reliably.
-- The evaluation currently considers material only.
-- Search is fixed-depth Negamax without alpha-beta pruning.
 - UCI time controls and the `stop` command still need search cancellation support.
 - FEN position loading may be added to support `position fen ...`.
 
