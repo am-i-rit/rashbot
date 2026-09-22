@@ -11,8 +11,8 @@ A chess engine written from scratch in C++17. The project currently includes an 
 - Legal-move validation by making a move and checking whether the moving side's king is attacked
 - Checkmate and stalemate detection
 - Perft and perft-divide testing
-- Material-based evaluation
-- Fixed-depth Negamax search with node counting
+- Evaluation accounts for material count and placement of pieces
+- Fixed-depth Negamax search with alpha-beta pruning and iterative deepening
 - SDL3 GUI with mouse controls, promotion selection, board flipping, and undo
 - Minimal UCI mode provided as a separate executable
 
@@ -125,4 +125,3 @@ The UCI executable can also be selected as an engine in a compatible chess GUI. 
 - UCI time controls and the `stop` command still need search cancellation support.
 - FEN position loading may be added to support `position fen ...`.
 
-Likely next improvements are alpha-beta pruning, move ordering, iterative deepening, proper draw tracking with Zobrist hashing, positional evaluation, and UCI time management.
