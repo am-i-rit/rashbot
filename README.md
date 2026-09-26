@@ -1,8 +1,6 @@
-# Rash-bot
+# Rashbot
 
-Rash-bot is a chess engine written from scratch in C++17. It includes a bitboard-based chess implementation, an iterative-deepening Negamax search, an SDL3 graphical interface, perft testing, and a basic Universal Chess Interface (UCI) executable.
-
-The name is inspired by Rashid Nezhmetdinov and his aggressive style of chess.
+Rashbot is a chess engine written from scratch in C++17. It includes a bitboard-based chess implementation, an iterative-deepening Negamax search, an SDL3 graphical interface, perft testing, and a basic Universal Chess Interface (UCI) executable.
 
 ## Features
 
