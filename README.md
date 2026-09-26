@@ -1,24 +1,47 @@
 # Rash-bot
 
-A chess engine written from scratch in C++17. The project currently includes an SDL-based graphical interface, bitboard move generation, perft testing, a basic Negamax search, and a minimal UCI executable. It's called Rash-bot because once it's completed, hopefully it will play very aggressive (you could say rash!) chess somewhat akin to the style of Rashid Nezhmetdinov.
+Rash-bot is a chess engine written from scratch in C++17. It includes a bitboard-based chess implementation, an iterative-deepening Negamax search, an SDL3 graphical interface, perft testing, and a basic Universal Chess Interface (UCI) executable.
 
-## Current features
+The name is inspired by Rashid Nezhmetdinov and his aggressive style of chess.
 
-- Bitboard board representation with separate bitboards for all 12 piece types
-- State stack for fast move/undo operations
-- Pseudo-legal move generation for pawns, knights, bishops, rooks, queens, and kings
-- Castling, en passant, and all four promotion choices
-- Legal-move validation by making a move and checking whether the moving side's king is attacked
+## Features
+
+### Board representation and rules
+
+- Separate 64-bit bitboards for all 12 piece types
+- Precomputed attack tables and sliding-piece rays
+- State stack for fast move execution and undo
+- Pseudo-legal move generation for every piece
+- Legal-move validation through king-safety checks
+- Castling on both sides
+- En passant captures
+- Queen, rook, bishop, and knight promotions
 - Checkmate and stalemate detection
-- Perft and perft-divide testing
-- Evaluation accounts for material count and placement of pieces
-- Fixed-depth Negamax search with alpha-beta pruning and iterative deepening
-- SDL3 GUI with mouse controls, promotion selection, board flipping, and undo
-- Minimal UCI mode provided as a separate executable
+
+### Search and evaluation
+
+- Iterative-deepening Negamax search
+- Alpha-beta pruning
+- Quiescence search for captures, promotions, and check evasions
+- Material and piece-square-table evaluation
+- Capture and promotion move ordering
+- Previous-iteration best-move ordering
+- Node counting and search information output
+
+### Interfaces
+
+- SDL3 graphical interface
+- Mouse-controlled move selection
+- Promotion selection
+- Board flipping
+- Move undo
+- Human-versus-engine gameplay
+- Basic UCI executable for use from a terminal or compatible chess GUI
+- Separate GUI and UCI build targets
 
 ## Perft results
 
-Move generation has been checked against the standard starting-position perft values:
+The move generator has been checked against the standard starting-position perft values:
 
 | Depth | Nodes |
 |------:|------:|
@@ -36,56 +59,140 @@ Move generation has been checked against the standard starting-position perft va
 - SDL3
 - SDL3_image
 
-On macOS with Homebrew, the dependencies can be installed with:
+## Building on macOS
+
+Install the dependencies with Homebrew:
 
 ```sh
 brew install cmake sdl3 sdl3_image
 ```
 
-## Building
-
-Configure the project once:
+Clone and build the project:
 
 ```sh
+git clone https://github.com/am-i-rit/rashbot.git
+cd rashbot
+
 cmake -S . -B build
-```
-
-Build both executables:
-
-```sh
 cmake --build build
 ```
 
-Or build only one target:
+Build only one executable if desired:
 
 ```sh
 cmake --build build --target chess-engine
 cmake --build build --target chess-engine-uci
 ```
 
-## Running the GUI
+Run the graphical interface:
 
 ```sh
 ./build/chess-engine
 ```
 
-Controls:
-
-- Click a piece and then its destination square to move.
-- Click one of the displayed pieces when choosing a promotion.
-- Press `Space` to flip the board.
-- Press `Backspace` to undo a move.
-- Press `Escape` to quit.
-
-The engine side and fixed search depth are currently configured in `main.cpp` using `engineTurn` and `engineDepth`.
-
-## Running in UCI mode
+Run the UCI executable:
 
 ```sh
 ./build/chess-engine-uci
 ```
 
-You can test the interface directly from the terminal:
+## Building on Windows
+
+### 1. Install the development tools
+
+Install the following:
+
+- [Visual Studio](https://visualstudio.microsoft.com/downloads/) with the **Desktop development with C++** workload
+- Git
+- CMake
+- [vcpkg](https://learn.microsoft.com/vcpkg/get_started/get-started)
+
+The Visual Studio C++ workload includes the MSVC compiler and CMake support.
+
+### 2. Install vcpkg
+
+Open PowerShell and run:
+
+```powershell
+git clone https://github.com/microsoft/vcpkg.git C:\dev\vcpkg
+cd C:\dev\vcpkg
+.\bootstrap-vcpkg.bat
+```
+
+Install SDL3 and SDL3_image with PNG support:
+
+```powershell
+.\vcpkg install sdl3:x64-windows "sdl3-image[png]:x64-windows"
+```
+
+### 3. Clone and configure Rash-bot
+
+```powershell
+cd C:\dev
+git clone https://github.com/am-i-rit/rashbot.git
+cd rashbot
+```
+
+Configure the project using the vcpkg CMake toolchain:
+
+```powershell
+cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake
+```
+
+If vcpkg was installed somewhere else, replace `C:/dev/vcpkg` with its actual location.
+
+### 4. Build the executables
+
+```powershell
+cmake --build build --config Release
+```
+
+The resulting executables should be located at:
+
+```text
+build\Release\chess-engine.exe
+build\Release\chess-engine-uci.exe
+```
+
+### 5. Run the programs
+
+Run the graphical interface:
+
+```powershell
+.\build\Release\chess-engine.exe
+```
+
+Run the UCI executable:
+
+```powershell
+.\build\Release\chess-engine-uci.exe
+```
+
+To use Rash-bot in a chess GUI, select `chess-engine-uci.exe` as the engine executable.
+
+## GUI controls
+
+- Click a piece and then its destination square to move.
+- Select a displayed piece when promoting a pawn.
+- Press `Space` to flip the board.
+- Press `Backspace` to undo a move.
+- Press `Escape` to quit.
+
+The human currently plays White and the engine plays Black. The engine side and search depth can be changed through `engineTurn` and `engineDepth` in `main.cpp`.
+
+## UCI usage
+
+The committed UCI implementation supports:
+
+- `uci`
+- `isready`
+- `ucinewgame`
+- `position startpos`
+- `position startpos moves ...`
+- `go depth <depth>`
+- `quit`
+
+Example session:
 
 ```text
 uci
@@ -96,30 +203,42 @@ go depth 5
 quit
 ```
 
-The engine should answer the `go` command with a line in this form:
+The engine reports search information and returns a move in this format:
 
 ```text
+info depth 5 nodes 123456
 bestmove g1f3
 ```
-
-The UCI executable can also be selected as an engine in a compatible chess GUI. The current implementation is intended to support the basic fixed-depth workflow; full time management, pondering, and search interruption are not implemented yet.
 
 ## Project structure
 
 | File | Purpose |
 |---|---|
-| `main.cpp` | SDL GUI and human-versus-engine game loop |
-| `uci_main.cpp` | Entry point for the command-line UCI executable |
-| `uci.cpp` / `uci.h` | UCI command parsing and move conversion |
-| `chessboard.cpp` / `chessboard.h` | Position state, move generation, move execution, and legality |
-| `search.cpp` / `search.h` | Evaluation, Negamax search, and best-move selection |
-| `perft.cpp` / `perft.h` | Perft and perft-divide tests |
+| `main.cpp` | SDL3 interface and human-versus-engine game loop |
+| `uci_main.cpp` | Entry point for the UCI executable |
+| `uci.cpp` / `uci.h` | UCI parsing and move conversion |
+| `chessboard.cpp` / `chessboard.h` | Board state, move generation, move execution, and legality |
+| `search.cpp` / `search.h` | Evaluation, move ordering, and Negamax search |
+| `perft.cpp` / `perft.h` | Perft and perft-divide functions |
 | `helper.h` | Bitboard constants and helper functions |
-| `assets/` | Piece textures used by the SDL GUI |
+| `assets/pieces/` | Piece textures used by the SDL3 interface |
 
-## Current limitations and next steps
+## Current limitations
 
-- Draw tracking is not complete: the half-move clock and Zobrist hash must be updated as moves are made before fifty-move and repetition detection can be enabled reliably.
-- UCI time controls and the `stop` command still need search cancellation support.
-- FEN position loading may be added to support `position fen ...`.
+- UCI searches are fixed-depth and run synchronously.
+- The UCI `stop` command is not yet supported.
+- UCI `position fen` is not yet implemented.
+- Draw tracking is incomplete because the half-move clock and Zobrist hash are not updated yet.
+- Draw detection is not currently enabled during search.
+- Evaluation uses material and middlegame piece-square tables without game-phase interpolation.
+- The engine does not currently use a transposition table.
 
+## Planned improvements
+
+- Clock-controlled UCI search
+- Interruptible search and UCI `stop`
+- FEN position loading
+- Reliable fifty-move and repetition detection
+- Zobrist hashing and a transposition table
+- Separate middlegame and endgame evaluation
+- Additional move-ordering and search heuristics
