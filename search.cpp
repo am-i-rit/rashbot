@@ -75,7 +75,7 @@ const int Search::middlegameTables[6][64] = {
         -20,-10,-10, -5, -5,-10,-10,-20
     },
 
-    //king table
+    // king table
     {
         -30,-40,-40,-50,-50,-40,-40,-30,
         -30,-40,-40,-50,-50,-40,-40,-30,
@@ -89,7 +89,43 @@ const int Search::middlegameTables[6][64] = {
 };
 
 const int Search::endgameTables[6][64] = {
-    // Same six-piece structure
+    // pawn table
+    {
+
+
+    },
+
+    // knight table
+    {
+
+    },
+
+    // bishop table
+    {
+
+    },
+
+    // rook table
+    {
+
+    },
+
+    // queen table
+    {
+
+    },
+
+    // king table
+    {
+        -50,-40,-30,-20,-20,-30,-40,-50,
+        -30,-20,-10,  0,  0,-10,-20,-30,
+        -30,-10, 20, 30, 30, 20,-10,-30,
+        -30,-10, 30, 40, 40, 30,-10,-30,
+        -30,-10, 30, 40, 40, 30,-10,-30,
+        -30,-10, 20, 30, 30, 20,-10,-30,
+        -30,-30,  0,  0,  0,  0,-30,-30,
+        -50,-30,-30,-30,-30,-30,-30,-50
+    }
 };
 
 int Search::scoreMove(const Chessboard& board, const Move& move) const
@@ -201,10 +237,16 @@ int Search::negamax(Chessboard& board, int depth, int alpha, int beta)
 {
     ++nodes;
 
-    // if (board.isDrawn())
-    // {
-    //     return 0;
-    // }
+    if ((nodes & 2047ULL) == 0 && shouldStop())
+    {
+        searchStopped = true;
+        return 0;
+    }
+
+    if (board.isDrawn())
+    {
+        return 0;
+    }
 
     // depth limit
     if (depth <= 0)
@@ -293,6 +335,17 @@ int Search::quiesce(Chessboard& board, int alpha, int beta) {
     // increment nodes
     ++nodes;
 
+    if ((nodes & 2047ULL) == 0 && shouldStop())
+    {
+        searchStopped = true;
+        return 0;
+    }
+
+    if (board.isDrawn())
+    {
+        return 0;
+    }
+
     // make sure we're not in check first
     bool inCheck;
     if (board.getTurn() == WHITE) {
@@ -324,6 +377,24 @@ int Search::quiesce(Chessboard& board, int alpha, int beta) {
     Move moves[256];
     int numMoves;
     board.pseudoMoves(moves, numMoves);
+
+    if (!inCheck)
+    {
+        int tacticalMoves = 0;
+
+        for (int i = 0; i < numMoves; ++i)
+        {
+            if (board.isCapture(moves[i]) ||
+                moves[i].promotion != EMPTY)
+            {
+                moves[tacticalMoves] = moves[i];
+                ++tacticalMoves;
+            }
+        }
+
+        numMoves = tacticalMoves;
+    }
+
     orderMoves(board, moves, numMoves);
 
     int legalMoves = 0;
@@ -387,74 +458,72 @@ SearchResult Search::searchRoot(Chessboard& board, int depth, const Move& prefer
 
     for (int i = 0; i < numMoves; ++i)
     {
+        if (shouldStop())
+        {
+            searchStopped = true;
+            break;
+        }
+
         board.move(moves[i]);
 
         bool illegal;
 
         if (board.getTurn() == WHITE)
         {
-            illegal = board.isAttacked(
-                board.bKingSquare(),
-                WHITE
-            );
+            illegal = board.isAttacked(board.bKingSquare(), WHITE);
         }
         else
         {
-            illegal = board.isAttacked(
-                board.wKingSquare(),
-                BLACK
-            );
+            illegal = board.isAttacked(board.wKingSquare(), BLACK);
         }
+
+        int score = 0;
 
         if (!illegal)
         {
-            int score = -negamax(
-                board,
-                depth - 1,
-                -POSITIVE_INFINITY,
-                -alpha
-            );
-
-            if (!foundMove || score > alpha)
-            {
-                alpha = score;
-                bestMove = moves[i];
-                foundMove = true;
-            }
+            score = -negamax(board, depth - 1, -POSITIVE_INFINITY, -alpha);
         }
 
         board.undo();
+
+        if (searchStopped) {
+            break;
+        }
+
+        if (!illegal && (!foundMove || score > alpha)) {
+            alpha = score;
+            bestMove = moves[i];
+            foundMove = true;
+        }
+
     }
 
     if (!foundMove)
     {
         return {
-            {64, 64, EMPTY},
-            0,
-            false
-        };
+            {64, 64, EMPTY}, 0, false};
     }
 
     return {
-        bestMove,
-        alpha,
-        true
-    };
+        bestMove, alpha, true};
 }
 
-Move Search::findBestMove(
-    Chessboard& board,
-    int maximumDepth
-)
+Move Search::findBestMove(Chessboard& board, int maximumDepth, int timeLimit)
 {
     nodes = 0;
+    searchStopped = false;
+    stopRequested.store(false, std::memory_order_relaxed);
+
+    timeLimitEnabled = timeLimit > 0;
+
+    if (timeLimitEnabled)
+    {
+        deadline =
+            std::chrono::steady_clock::now() +
+            std::chrono::milliseconds(timeLimit);
+    }
 
     Move bestMove = {64, 64, EMPTY};
-
-    if (maximumDepth < 1)
-    {
-        maximumDepth = 1;
-    }
 
     for (int currentDepth = 1;
          currentDepth <= maximumDepth;
@@ -466,10 +535,11 @@ Move Search::findBestMove(
             bestMove
         );
 
-        if (!result.foundMove)
-        {
+        if (searchStopped)
             break;
-        }
+
+        if (!result.foundMove)
+            break;
 
         bestMove = result.move;
 
@@ -484,58 +554,20 @@ Move Search::findBestMove(
 
     return bestMove;
 }
-/* Move Search::findBestMove(Chessboard& board, int depth)
+
+bool Search::shouldStop()
 {
-    nodes = 0;
+    if (stopRequested.load(std::memory_order_relaxed))
+        return true;
 
-    Move moves[256];
-    int numMoves;
-    board.pseudoMoves(moves, numMoves);
-    orderMoves(board, moves, numMoves);
-
-    Move bestMove = {64, 64, EMPTY};
-    int alpha = -1000000;
-    bool foundMove = false;
-
-    for (int i = 0; i < numMoves; ++i)
-    {
-        board.move(moves[i]);
-
-        bool illegal;
-
-        if (board.getTurn() == WHITE)
-        {
-            illegal = board.isAttacked(
-                board.bKingSquare(),
-                WHITE
-            );
-        }
-        else
-        {
-            illegal = board.isAttacked(
-                board.wKingSquare(),
-                BLACK
-            );
-        }
-
-        if (!illegal)
-        {
-            int score = -negamax(board, depth - 1, -1000000, -alpha);
-
-            if (!foundMove || score > alpha)
-            {
-                alpha = score;
-                bestMove = moves[i];
-                foundMove = true;
-            }
-        }
-
-        board.undo();
-    }
-
-    return bestMove;
+    return timeLimitEnabled &&
+           std::chrono::steady_clock::now() >= deadline;
 }
-*/
+
+void Search::stop()
+{
+    stopRequested.store(true, std::memory_order_relaxed);
+}
 
 uint64_t Search::getNodes() const
 {

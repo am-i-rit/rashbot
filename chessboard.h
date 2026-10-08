@@ -59,7 +59,7 @@ struct boardState
     // tracks number of half moves (for 50 move rule)
     std::uint8_t numHalfMoves;
 
-    // hash (helps w threefold repitition)
+    // hash (helps w threefold repitition and transpositions)
     std::uint64_t zobristHash;
 };
 
@@ -76,10 +76,19 @@ class Chessboard
     uint64_t diagonalRays[64][4];
     uint64_t orthogonalRays[64][4];
 
+    // zobrist hashes
+    static uint64_t pieceHash[12][64];
+    static uint64_t turnHash; 
+    static uint64_t castlingHash[16]; 
+    static uint64_t enPassantHash[8];
+    std::uint64_t calculateHash();
+
 
  public:
     // reset
     void reset();
+
+    std::uint64_t getHash() const;
 
     std::uint8_t getPiece(std::uint8_t square) const;
     void setPiece(std::uint8_t piece, std::uint8_t square);

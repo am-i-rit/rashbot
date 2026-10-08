@@ -2,9 +2,43 @@
 #include "chessboard.h"
 #include "helper.h"
 #include <cmath>
+#include <random>
+
+std::uint64_t Chessboard::pieceHash[12][64]{};
+std::uint64_t Chessboard::turnHash{};
+std::uint64_t Chessboard::castlingHash[16]{};
+std::uint64_t Chessboard::enPassantHash[8]{};
 
 Chessboard::Chessboard()
 {
+    // create random number generator for hashing
+    static bool zobristInitialized = false;
+    if (!zobristInitialized) {
+        std::mt19937_64 rng(0x123456789ABCDEF0ULL);
+
+        for (int piece = 0; piece < 12; ++piece)
+        {
+            for (int square = 0; square < 64; ++square)
+            {
+                pieceHash[piece][square] = rng();
+            }
+        }
+
+        turnHash = rng();
+
+        for (int rightsCombo = 0; rightsCombo < 16; ++rightsCombo) {
+            castlingHash[rightsCombo] = rng();
+        }
+
+        for (int file = 0; file < 8; ++file)
+        {
+            enPassantHash[file] = rng();
+        }
+
+
+        zobristInitialized = true;
+    }
+
     stateStack = new boardState[1000];
     reset();
 
@@ -125,7 +159,54 @@ void Chessboard::reset()
     stateStack[0].enpTarget = 0;
     stateStack[0].turn = WHITE;
     stateStack[0].numHalfMoves = 0;
-    stateStack[0].zobristHash = 0;
+    stateStack[0].zobristHash = calculateHash();
+}
+
+uint64_t Chessboard::calculateHash() {
+    uint64_t hash = 0;
+
+    // piece hash
+    for (int piece = 0; piece < 12; ++piece) {
+        std::uint64_t bb = stateStack[stackIndex].bitboards[piece];
+
+        while (bb)
+        {
+            std::uint8_t square = lsbIndex(bb);
+            bb &= bb - 1;
+
+            hash ^= pieceHash[piece][square];
+        }
+    }
+
+    // turn hash
+    if (getTurn() == BLACK) {
+        hash ^= turnHash;
+    }
+
+    // castling hash
+    std::uint8_t castlingRights = 0;
+
+    if (stateStack[stackIndex].wKingside)  castlingRights += 1;
+    if (stateStack[stackIndex].wQueenside) castlingRights += 2;
+    if (stateStack[stackIndex].bKingside)  castlingRights += 4;
+    if (stateStack[stackIndex].bQueenside) castlingRights += 8;
+
+    hash ^= castlingHash[castlingRights];
+
+    // en passant hash
+    if (stateStack[stackIndex].enpTarget) {
+        int square = lsbIndex(stateStack[stackIndex].enpTarget);
+        int file = square % 8;
+
+        hash ^= enPassantHash[file]; // can only occur on one rank per side so we dont need 64 bits
+    }
+
+    return hash;
+}
+
+uint64_t Chessboard::getHash() const
+{
+    return stateStack[stackIndex].zobristHash;
 }
 
 uint8_t Chessboard::getPiece(uint8_t square) const
@@ -150,9 +231,13 @@ void Chessboard::setPiece(uint8_t piece, uint8_t square)
 
 void Chessboard::move(const Move& move)
 {
+    // push new state
     int newIndex = stackIndex + 1;
     stateStack[newIndex] = stateStack[stackIndex];
     stackIndex = newIndex;
+
+    // increment half-move counter for 50-move rule
+    ++stateStack[stackIndex].numHalfMoves;
 
     uint64_t fromBitboard = uint64_t(1) << move.from;
     uint64_t toBitboard   = uint64_t(1) << move.to;
@@ -182,8 +267,14 @@ void Chessboard::move(const Move& move)
         if (stateStack[stackIndex].bitboards[i] & toBitboard)
         {
             stateStack[stackIndex].bitboards[i] ^= toBitboard;
+            stateStack[stackIndex].numHalfMoves = 0; // reset 50-move counter if capture
             break;
         }
+    }
+
+    // if pawn move, reset 50-move counter
+    if (movedPiece == wPawn || movedPiece == bPawn) {
+        stateStack[stackIndex].numHalfMoves = 0;
     }
 
     // en passant
@@ -253,6 +344,9 @@ void Chessboard::move(const Move& move)
 
     // switch turns
     stateStack[stackIndex].turn = whiteToMove ? BLACK : WHITE;
+
+    // update hash
+    stateStack[stackIndex].zobristHash = calculateHash();
 }
 
 void Chessboard::undo()
@@ -875,20 +969,33 @@ bool Chessboard::isDrawn()
 	if (stateStack[stackIndex].numHalfMoves >= 100) return true;
 
 	// repetition
-	int n = 0;
-	for (int i = stackIndex - 1; i >= 0; --i)
-	{
-		if (stateStack[stackIndex].zobristHash == stateStack[i].zobristHash)
-		{
-			++n;
-			if (n > 1) return true;
-		}
-	}
+	int occurrences = 1;
+
+    int earliest =
+        stackIndex - stateStack[stackIndex].numHalfMoves;
+
+    if (earliest < 0)
+        earliest = 0;
+
+    for (int i = stackIndex - 2; i >= earliest; i -= 2)
+    {
+        if (stateStack[i].zobristHash ==
+            stateStack[stackIndex].zobristHash)
+        {
+            ++occurrences;
+
+            if (occurrences >= 3)
+                return true;
+        }
+    }
 
 	// insufficient material
-	if (stateStack[stackIndex].bitboards[wPawn] || stateStack[stackIndex].bitboards[bPawn] ||
-		stateStack[stackIndex].bitboards[wRook] || stateStack[stackIndex].bitboards[bRook] ||
-		stateStack[stackIndex].bitboards[wQueen] || stateStack[stackIndex].bitboards[bQueen]) return false;
+	if (stateStack[stackIndex].bitboards[wPawn] || 
+        stateStack[stackIndex].bitboards[bPawn] ||
+		stateStack[stackIndex].bitboards[wRook] || 
+        stateStack[stackIndex].bitboards[bRook] ||
+		stateStack[stackIndex].bitboards[wQueen] || 
+        stateStack[stackIndex].bitboards[bQueen]) return false;
 	uint64_t white_bb = stateStack[stackIndex].bitboards[wBishop] | stateStack[stackIndex].bitboards[wKnight];
 	white_bb &= white_bb - 1;
 	uint64_t black_bb = stateStack[stackIndex].bitboards[bBishop] | stateStack[stackIndex].bitboards[bKnight];
