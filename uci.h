@@ -5,6 +5,7 @@
 #include "chessboard.h"
 #include "search.h"
 
+
 class UCI
 {
 private:
@@ -17,6 +18,9 @@ private:
     void setPosition(const std::string& command);
     void go(const std::string& command);
 
+    
+
 public:
     void run();
+
 };

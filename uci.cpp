@@ -1,7 +1,7 @@
 #include "uci.h"
-
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 
 Move UCI::parseMove(const std::string& text)
 {
@@ -148,19 +148,53 @@ void UCI::go(const std::string& command)
     std::istringstream input(command);
     std::string token;
 
-    int depth = 5;
+    int wtime = -1;
+    int btime = -1;
+    int winc = 0;
+    int binc = 0;
+    int moveTime = -1;
+    int depth = 64;
 
     input >> token; // "go"
 
     while (input >> token)
     {
         if (token == "depth")
-        {
             input >> depth;
+        else if (token == "movetime")
+            input >> moveTime;
+        else if (token == "wtime")
+            input >> wtime;
+        else if (token == "btime")
+            input >> btime;
+        else if (token == "winc")
+            input >> winc;
+        else if (token == "binc")
+            input >> binc;
+    }
+
+    if (moveTime < 0)
+    {
+        int remaining =
+            board.getTurn() == WHITE ? wtime : btime;
+
+        int increment =
+            board.getTurn() == WHITE ? winc : binc;
+
+        if (remaining >= 0)
+        {
+            moveTime = remaining / 30 + increment / 2;
+
+            int reserve = std::max(50, remaining / 20);
+
+            moveTime = std::min(
+                moveTime,
+                std::max(1, remaining - reserve)
+            );
         }
     }
 
-    Move bestMove = search.findBestMove(board, depth);
+    Move bestMove = search.findBestMove(board, depth, moveTime);
 
     std::cout << "info depth " << depth
               << " nodes " << search.getNodes()
