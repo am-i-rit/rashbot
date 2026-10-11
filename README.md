@@ -1,48 +1,48 @@
 # Rashbot
 
-Rashbot is a chess engine written from scratch in C++17. It includes a bitboard-based chess implementation, an iterative-deepening Negamax search, an SDL3 graphical interface, perft testing, and a basic Universal Chess Interface (UCI) executable.
+Rashbot is a chess engine written from scratch in C++17. It includes a UCI-compatible engine for chess interfaces and Lichess, plus an SDL3 graphical interface for playing locally.
+
+The project is named after Rashid Nezhmetdinov. Its long-term goal is to combine solid search with an aggressive, tactical playing style inspired by his games.
 
 ## Features
 
-### Board representation and rules
+### Board and move generation
 
-- Separate 64-bit bitboards for all 12 piece types
-- Precomputed attack tables and sliding-piece rays
-- State stack for fast move execution and undo
-- Pseudo-legal move generation for every piece
-- Legal-move validation through king-safety checks
-- Castling on both sides
-- En passant captures
-- Queen, rook, bishop, and knight promotions
-- Checkmate and stalemate detection
+- Bitboard representation with separate bitboards for all 12 piece types
+- State stack for efficient make-and-undo operations
+- Pseudo-legal move generation followed by king-safety validation
+- Castling, en passant, captures, and all four promotion choices
+- Check, checkmate, and stalemate detection
+- FEN position loading
+- Fifty-move, threefold-repetition, and insufficient-material draw detection
+- Fixed-seed Zobrist hashing for position identification and repetition detection
+- Perft and perft-divide testing
 
 ### Search and evaluation
 
-- Iterative-deepening Negamax search
-- Alpha-beta pruning
-- Quiescence search for captures, promotions, and check evasions
-- Material and piece-square-table evaluation
-- Capture and promotion move ordering
-- Previous-iteration best-move ordering
-- Node counting and search information output
+- Negamax search with alpha-beta pruning
+- Iterative deepening
+- Quiescence search for tactically unstable leaf positions
+- Move ordering for improved alpha-beta efficiency
+- Material evaluation with piece-square tables
+- Mate-distance scoring
+- Node counting
+- Search deadlines and externally requested cancellation
 
 ### Interfaces
 
-- SDL3 graphical interface
-- Mouse-controlled move selection
-- Promotion selection
-- Board flipping
-- Move undo
-- Human-versus-engine gameplay
-- Basic UCI executable for use from a terminal or compatible chess GUI
-- Separate GUI and UCI build targets
+- UCI command-line executable: `rashbot`
+- SDL3 graphical executable: `rashbot-gui`
+- Background UCI search so `stop` and `quit` can interrupt a search
+- Time management using UCI clock and increment information
+- Compatibility with `lichess-bot`
 
 ## Perft results
 
-The move generator has been checked against the standard starting-position perft values:
+Move generation has been checked against the standard starting-position perft values:
 
 | Depth | Nodes |
-|------:|------:|
+| ---: | ---: |
 | 1 | 20 |
 | 2 | 400 |
 | 3 | 8,902 |
@@ -56,187 +56,123 @@ The move generator has been checked against the standard starting-position perft
 - CMake 3.20 or newer
 - SDL3
 - SDL3_image
+- A platform with standard C++ thread support
 
-## Building on macOS
-
-Install the dependencies with Homebrew:
+On macOS, the dependencies can be installed with Homebrew:
 
 ```sh
 brew install cmake sdl3 sdl3_image
 ```
 
-Clone and build the project:
+## Building
+
+Configure the project:
 
 ```sh
-git clone https://github.com/am-i-rit/rashbot.git
-cd rashbot
-
 cmake -S . -B build
+```
+
+Build both executables:
+
+```sh
 cmake --build build
 ```
 
-Build only one executable if desired:
+Alternatively, build one target:
 
 ```sh
-cmake --build build --target chess-engine
-cmake --build build --target chess-engine-uci
+cmake --build build --target rashbot
+cmake --build build --target rashbot-gui
 ```
 
-Run the graphical interface:
-
-```sh
-./build/chess-engine
-```
-
-Run the UCI executable:
-
-```sh
-./build/chess-engine-uci
-```
-
-## Building on Windows
-
-### 1. Install the development tools
-
-Install the following:
-
-- [Visual Studio](https://visualstudio.microsoft.com/downloads/) with the **Desktop development with C++** workload
-- Git
-- CMake
-- [vcpkg](https://learn.microsoft.com/vcpkg/get_started/get-started)
-
-The Visual Studio C++ workload includes the MSVC compiler and CMake support.
-
-### 2. Install vcpkg
-
-Open PowerShell and run:
-
-```powershell
-git clone https://github.com/microsoft/vcpkg.git C:\dev\vcpkg
-cd C:\dev\vcpkg
-.\bootstrap-vcpkg.bat
-```
-
-Install SDL3 and SDL3_image with PNG support:
-
-```powershell
-.\vcpkg install sdl3:x64-windows "sdl3-image[png]:x64-windows"
-```
-
-### 3. Clone and configure Rash-bot
-
-```powershell
-cd C:\dev
-git clone https://github.com/am-i-rit/rashbot.git
-cd rashbot
-```
-
-Configure the project using the vcpkg CMake toolchain:
-
-```powershell
-cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake
-```
-
-If vcpkg was installed somewhere else, replace `C:/dev/vcpkg` with its actual location.
-
-### 4. Build the executables
-
-```powershell
-cmake --build build --config Release
-```
-
-The resulting executables should be located at:
+The resulting executables are:
 
 ```text
-build\Release\chess-engine.exe
-build\Release\chess-engine-uci.exe
+build/rashbot
+build/rashbot-gui
 ```
 
-### 5. Run the programs
+## Running the GUI
 
-Run the graphical interface:
-
-```powershell
-.\build\Release\chess-engine.exe
+```sh
+./build/rashbot-gui
 ```
 
-Run the UCI executable:
+Controls:
 
-```powershell
-.\build\Release\chess-engine-uci.exe
-```
-
-To use Rash-bot in a chess GUI, select `chess-engine-uci.exe` as the engine executable.
-
-## GUI controls
-
-- Click a piece and then its destination square to move.
-- Select a displayed piece when promoting a pawn.
+- Click a piece and then a destination square to move.
 - Press `Space` to flip the board.
 - Press `Backspace` to undo a move.
 - Press `Escape` to quit.
 
-The human currently plays White and the engine plays Black. The engine side and search depth can be changed through `engineTurn` and `engineDepth` in `main.cpp`.
+The engine colour and search depth used by the GUI are currently configured in `main.cpp`.
 
-## UCI usage
+## Running as a UCI engine
 
-The committed UCI implementation supports:
+Start Rashbot from a terminal:
 
-- `uci`
-- `isready`
-- `ucinewgame`
-- `position startpos`
-- `position startpos moves ...`
-- `go depth <depth>`
-- `quit`
+```sh
+./build/rashbot
+```
 
-Example session:
+A basic manual test is:
 
 ```text
 uci
 isready
 ucinewgame
-position startpos moves e2e4 e7e5
+position startpos moves e2e4 e7e5 g1f3
 go depth 5
 quit
 ```
 
-The engine reports search information and returns a move in this format:
+Rashbot responds to a completed search with a move such as:
 
 ```text
-info depth 5 nodes 123456
-bestmove g1f3
+bestmove b8c6
 ```
+
+The UCI interface supports the core commands needed for play, including:
+
+- `uci`
+- `isready`
+- `ucinewgame`
+- `position startpos ...`
+- `position fen ...`
+- `go depth ...`
+- `go movetime ...`
+- Clock-based `go` commands using `wtime`, `btime`, `winc`, and `binc`
+- `go infinite`
+- `stop`
+- `quit`
+
+Pondering and configurable `setoption` parameters are not currently supported.
+
+## Playing on Lichess
+
+You can play against rashbot [here](https://lichess.org/@/rashbot), although right now this will only work when my computer is on. In the future I plan on running it 24/7 on either a Raspberry Pi or Cloud VPS.
 
 ## Project structure
 
 | File | Purpose |
-|---|---|
-| `main.cpp` | SDL3 interface and human-versus-engine game loop |
+| --- | --- |
+| `main.cpp` | SDL GUI and local human-versus-engine game loop |
 | `uci_main.cpp` | Entry point for the UCI executable |
-| `uci.cpp` / `uci.h` | UCI parsing and move conversion |
-| `chessboard.cpp` / `chessboard.h` | Board state, move generation, move execution, and legality |
-| `search.cpp` / `search.h` | Evaluation, move ordering, and Negamax search |
-| `perft.cpp` / `perft.h` | Perft and perft-divide functions |
+| `uci.cpp` / `uci.h` | UCI command handling, time controls, and search-thread management |
+| `chessboard.cpp` / `chessboard.h` | Position state, move generation, legality, FEN loading, hashing, and draw detection |
+| `search.cpp` / `search.h` | Evaluation, move ordering, iterative deepening, alpha-beta search, and quiescence |
+| `perft.cpp` / `perft.h` | Perft and perft-divide tests |
 | `helper.h` | Bitboard constants and helper functions |
-| `assets/pieces/` | Piece textures used by the SDL3 interface |
-
-## Current limitations
-
-- UCI searches are fixed-depth and run synchronously.
-- The UCI `stop` command is not yet supported.
-- UCI `position fen` is not yet implemented.
-- Draw tracking is incomplete because the half-move clock and Zobrist hash are not updated yet.
-- Draw detection is not currently enabled during search.
-- Evaluation uses material and middlegame piece-square tables without game-phase interpolation.
-- The engine does not currently use a transposition table.
+| `assets/` | Piece textures used by the SDL GUI |
 
 ## Planned improvements
 
-- Clock-controlled UCI search
-- Interruptible search and UCI `stop`
-- FEN position loading
-- Reliable fifty-move and repetition detection
-- Zobrist hashing and a transposition table
-- Separate middlegame and endgame evaluation
-- Additional move-ordering and search heuristics
+- Transposition table using the existing Zobrist hashes
+- A custom opening book based primarily on games by Rashid Nezhmetdinov and other attacking players
+- More sophisticated positional and attacking evaluation terms
+- Principal-variation reporting and additional UCI information output
+- Multi-thread search
+- Search performance benchmarking and optimization
+- Optional pondering
+- Non-blocking search in the SDL GUI
+- Headless Linux deployment for continuous Lichess availability
