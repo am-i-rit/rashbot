@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 #include "chessboard.h"
+#include <atomic>
+#include <chrono>
 
 struct SearchResult
 {
@@ -29,11 +31,21 @@ private:
 
     SearchResult searchRoot(Chessboard& board, int depth, const Move& preferredMove);
 
+    std::atomic<bool> stopRequested{false};
 
+    bool searchStopped = false;
+    bool timeLimitEnabled = false;
+
+    std::chrono::steady_clock::time_point deadline;
+
+    bool shouldStop();
 
 public:
 
-    Move findBestMove(Chessboard& board, int depth);
+    Move findBestMove(Chessboard& board, int depth, int timeLimit);
     std::uint64_t getNodes() const;
+
+    void stop();
+    void resetStop();
 
 };

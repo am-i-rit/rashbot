@@ -297,6 +297,10 @@ int Search::negamax(Chessboard& board, int depth, int alpha, int beta)
         }
 
         board.undo();
+        
+        if (searchStopped) {
+                return 0;
+        }        
 
         if (alpha >= beta) break;
     }
@@ -420,6 +424,10 @@ int Search::quiesce(Chessboard& board, int alpha, int beta) {
 
             board.undo();
 
+            if (searchStopped) {
+                return 0;
+            }
+
             if (score >= beta)
                 return score;
 
@@ -512,7 +520,6 @@ Move Search::findBestMove(Chessboard& board, int maximumDepth, int timeLimit)
 {
     nodes = 0;
     searchStopped = false;
-    stopRequested.store(false, std::memory_order_relaxed);
 
     timeLimitEnabled = timeLimit > 0;
 
@@ -567,6 +574,11 @@ bool Search::shouldStop()
 void Search::stop()
 {
     stopRequested.store(true, std::memory_order_relaxed);
+}
+
+void Search::resetStop()
+{
+    stopRequested.store(false, std::memory_order_relaxed);
 }
 
 uint64_t Search::getNodes() const
