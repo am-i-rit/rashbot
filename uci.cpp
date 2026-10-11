@@ -234,11 +234,26 @@ void UCI::go(const std::string& command)
 
     searchThread = std::thread([this, depth, moveTime]()
     {
-        Move bestMove =
-            search.findBestMove(board, depth, moveTime);
+        auto start = std::chrono::steady_clock::now();
 
-        std::cout << "info nodes "
-                << search.getNodes()
+        Move bestMove = search.findBestMove(board, depth, moveTime);
+
+        std::uint64_t nodes = search.getNodes();
+
+        auto elapsed =
+                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
+        
+        std::uint64_t nps = 0;
+        if (elapsed > 0) {
+            nps = (nodes * 1000ULL) / (static_cast<std::uint64_t>(elapsed));
+        }
+
+        std::cout << "info depth " << search.getCompletedDepth()
+                << " score cp " << search.getBestScore() 
+                << " nodes " << nodes
+                << " time " << elapsed
+                << " nps " << nps
+                << " pv " << moveToString(bestMove)
                 << '\n';
 
         std::cout << "bestmove "

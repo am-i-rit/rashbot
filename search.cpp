@@ -198,7 +198,6 @@ void Search::moveToFront(Move* moves, int numMoves, const Move& preferredMove) c
     }
 }
 
-
 int Search::evaluate(const Chessboard &board) const
 {
     // returns an evaluation score relative to white
@@ -518,20 +517,20 @@ SearchResult Search::searchRoot(Chessboard& board, int depth, const Move& prefer
 
 Move Search::findBestMove(Chessboard& board, int maximumDepth, int timeLimit)
 {
-    nodes = 0;
     searchStopped = false;
+    nodes = 0;
+    completedDepth = 0;
+    bestScore = 0;
 
     timeLimitEnabled = timeLimit > 0;
 
-    if (timeLimitEnabled)
-    {
-        deadline =
-            std::chrono::steady_clock::now() +
-            std::chrono::milliseconds(timeLimit);
+    if (timeLimitEnabled) {
+        deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeLimit);
     }
 
     Move bestMove = {64, 64, EMPTY};
 
+    // generate a fallback move just in case engine can't complete depth 1
     Move fallbackMoves[256];
     int numFallbackMoves;
 
@@ -563,15 +562,9 @@ Move Search::findBestMove(Chessboard& board, int maximumDepth, int timeLimit)
         }
     }
 
-    for (int currentDepth = 1;
-         currentDepth <= maximumDepth;
-         ++currentDepth)
+    for (int currentDepth = 1; currentDepth <= maximumDepth; ++currentDepth)
     {
-        SearchResult result = searchRoot(
-            board,
-            currentDepth,
-            bestMove
-        );
+        SearchResult result = searchRoot(board, currentDepth, bestMove);
 
         if (searchStopped)
             break;
@@ -580,17 +573,26 @@ Move Search::findBestMove(Chessboard& board, int maximumDepth, int timeLimit)
             break;
 
         bestMove = result.move;
+        completedDepth = currentDepth;
+        bestScore = result.score;
 
-        std::cerr << "Completed depth: "
-                  << currentDepth
-                  << " score: "
-                  << result.score
-                  << " nodes: "
-                  << nodes
-                  << '\n';
+        /* std::cerr << "Completed depth: " << currentDepth
+                  << " score: " << result.score
+                  << " nodes: " << nodes
+                  << '\n'; */
     }
 
     return bestMove;
+}
+
+int Search::getCompletedDepth() const
+{
+    return completedDepth;
+}
+
+int Search::getBestScore() const
+{
+    return bestScore;
 }
 
 bool Search::shouldStop()
@@ -598,8 +600,7 @@ bool Search::shouldStop()
     if (stopRequested.load(std::memory_order_relaxed))
         return true;
 
-    return timeLimitEnabled &&
-           std::chrono::steady_clock::now() >= deadline;
+    return timeLimitEnabled && std::chrono::steady_clock::now() >= deadline;
 }
 
 void Search::stop()

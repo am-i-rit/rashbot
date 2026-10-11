@@ -40,12 +40,19 @@ private:
 
     bool shouldStop();
 
+    int completedDepth = 0;
+    int bestScore = 0;
+
 public:
 
     Move findBestMove(Chessboard& board, int depth, int timeLimit);
     std::uint64_t getNodes() const;
 
+    int getCompletedDepth() const;
+    int getBestScore() const;
+    
     void stop();
     void resetStop();
+
 
 };
