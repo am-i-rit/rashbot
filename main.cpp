@@ -12,7 +12,7 @@ Chessboard game;
 Search search;
 
 Colour engineTurn = BLACK;
-uint8_t engineDepth = 7;
+uint8_t engineDepth = 6;
 
 struct SDLState
 {
