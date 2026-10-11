@@ -194,15 +194,23 @@ void UCI::go(const std::string& command)
         }
     }
 
-    Move bestMove = search.findBestMove(board, depth, moveTime);
+    // stop search before starting new thread
+    stopSearch();
+    search.resetStop();
 
-    std::cout << "info depth " << depth
-              << " nodes " << search.getNodes()
-              << '\n';
+    searchThread = std::thread([this, depth, moveTime]()
+    {
+        Move bestMove =
+            search.findBestMove(board, depth, moveTime);
 
-    std::cout << "bestmove "
-              << moveToString(bestMove)
-              << std::endl;
+        std::cout << "info nodes "
+                << search.getNodes()
+                << '\n';
+
+        std::cout << "bestmove "
+                << moveToString(bestMove)
+                << std::endl;
+    });
 }
 
 void UCI::run()
@@ -213,7 +221,7 @@ void UCI::run()
     {
         if (command == "uci")
         {
-            std::cout << "id name Rash-bot\n";
+            std::cout << "id name Rashbot\n";
             std::cout << "id author Amrit B.\n";
             std::cout << "uciok" << std::endl;
         }
@@ -223,19 +231,42 @@ void UCI::run()
         }
         else if (command == "ucinewgame")
         {
+            stopSearch();
             board.reset();
         }
         else if (command.rfind("position ", 0) == 0)
         {
+            stopSearch();
             setPosition(command);
         }
         else if (command.rfind("go", 0) == 0)
         {
             go(command);
         }
+        else if (command == "stop")
+        {
+            stopSearch();
+        }
         else if (command == "quit")
         {
+            stopSearch();
             break;
         }
     }
+
+    stopSearch();
+}
+
+void UCI::stopSearch() {
+    search.stop();
+
+    if (searchThread.joinable())
+    {
+        searchThread.join();
+    }
+}
+
+UCI::~UCI()
+{
+    stopSearch();
 }
