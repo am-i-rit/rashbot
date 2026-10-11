@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(SDL3 REQUIRED CONFIG)
 find_package(SDL3_image REQUIRED CONFIG)
+find_package(Threads REQUIRED)
 
 add_executable(chess-engine 
     main.cpp chessboard.cpp perft.cpp search.cpp)
@@ -19,3 +20,4 @@ add_custom_command(TARGET chess-engine POST_BUILD
         $<TARGET_FILE_DIR:chess-engine>/assets)
 
 target_link_libraries(chess-engine PRIVATE SDL3::SDL3 SDL3_image::SDL3_image)
+target_link_libraries(chess-engine-uci PRIVATE Threads::Threads)
