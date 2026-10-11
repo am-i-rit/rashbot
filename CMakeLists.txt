@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(chess-engine)
+project(rashbot)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,16 +8,17 @@ find_package(SDL3 REQUIRED CONFIG)
 find_package(SDL3_image REQUIRED CONFIG)
 find_package(Threads REQUIRED)
 
-add_executable(chess-engine 
-    main.cpp chessboard.cpp perft.cpp search.cpp)
-
-add_executable(chess-engine-uci 
+add_executable(rashbot
     uci_main.cpp uci.cpp chessboard.cpp search.cpp)
 
-add_custom_command(TARGET chess-engine POST_BUILD
+
+add_executable(rashbot-gui 
+    main.cpp chessboard.cpp perft.cpp search.cpp)
+
+add_custom_command(TARGET rashbot-gui POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/assets
-        $<TARGET_FILE_DIR:chess-engine>/assets)
+        $<TARGET_FILE_DIR:rashbot-gui>/assets)
 
-target_link_libraries(chess-engine PRIVATE SDL3::SDL3 SDL3_image::SDL3_image)
-target_link_libraries(chess-engine-uci PRIVATE Threads::Threads)
+target_link_libraries(rashbot PRIVATE Threads::Threads)
+target_link_libraries(rashbot-gui PRIVATE SDL3::SDL3 SDL3_image::SDL3_image)
