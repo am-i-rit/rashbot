@@ -532,6 +532,37 @@ Move Search::findBestMove(Chessboard& board, int maximumDepth, int timeLimit)
 
     Move bestMove = {64, 64, EMPTY};
 
+    Move fallbackMoves[256];
+    int numFallbackMoves;
+
+    board.pseudoMoves(fallbackMoves, numFallbackMoves);
+
+    for (int i = 0; i < numFallbackMoves; ++i)
+    {
+        board.move(fallbackMoves[i]);
+
+        bool illegal;
+
+        if (board.getTurn() == WHITE)
+        {
+            // Black just moved
+            illegal = board.isAttacked(board.bKingSquare(), WHITE);
+        }
+        else
+        {
+            // White just moved
+            illegal = board.isAttacked(board.wKingSquare(), BLACK);
+        }
+
+        board.undo();
+
+        if (!illegal)
+        {
+            bestMove = fallbackMoves[i];
+            break;
+        }
+    }
+
     for (int currentDepth = 1;
          currentDepth <= maximumDepth;
          ++currentDepth)

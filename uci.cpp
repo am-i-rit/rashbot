@@ -157,7 +157,7 @@ void UCI::setPosition(const std::string& command)
         std::cerr << "Expected moves after position\n";
         return;
     }
-    
+
     // apply every move listed after "moves"
     while (input >> token)
     {
@@ -185,6 +185,7 @@ void UCI::go(const std::string& command)
     int binc = 0;
     int moveTime = -1;
     int depth = 64;
+    int movesToGo = 30;
 
     input >> token; // "go"
 
@@ -202,6 +203,8 @@ void UCI::go(const std::string& command)
             input >> winc;
         else if (token == "binc")
             input >> binc;
+        else if (token == "movestogo")
+            input >> movesToGo;
     }
 
     if (moveTime < 0)
@@ -214,7 +217,7 @@ void UCI::go(const std::string& command)
 
         if (remaining >= 0)
         {
-            moveTime = remaining / 30 + increment / 2;
+            moveTime = std::max(1, remaining / movesToGo + increment / 2);
 
             int reserve = std::max(50, remaining / 20);
 
