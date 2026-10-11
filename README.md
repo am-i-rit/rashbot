@@ -1,6 +1,6 @@
 # Rashbot
 
-Rashbot is a chess engine written from scratch in C++17. It includes a UCI-compatible engine for chess interfaces and Lichess, plus an SDL3 graphical interface for playing locally.
+Rashbot is a chess engine written from scratch in C++. It includes a UCI-compatible engine for chess interfaces and Lichess, plus an SDL3 graphical interface for playing locally.
 
 The project is named after Rashid Nezhmetdinov. Its long-term goal is to combine solid search with an aggressive, tactical playing style inspired by his games.
 
