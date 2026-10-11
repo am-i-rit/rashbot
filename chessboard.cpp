@@ -39,7 +39,6 @@ Chessboard::Chessboard()
         zobristInitialized = true;
     }
 
-    stateStack = new boardState[1000];
     reset();
 
     // generate various bitboards for piece attacks
@@ -1011,7 +1010,3 @@ uint64_t Chessboard::getBitboard(uint8_t piece) const
     return stateStack[stackIndex].bitboards[piece];
 }
 
-Chessboard::~Chessboard()
-{
-    delete[] stateStack;    
-}

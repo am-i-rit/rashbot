@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <array>
 
 enum Piece: uint8_t
 {
@@ -67,8 +68,8 @@ class Chessboard
 {
  private:
 
-    boardState* stateStack;
-    int stackIndex;
+    std::array<boardState, 1000> stateStack;
+    int stackIndex = 0;
 
     // attack bitboards
     uint64_t kingAttacks[64];
@@ -116,7 +117,4 @@ class Chessboard
 
     // constructor
     Chessboard(); 
-
-    // destructor
-    ~Chessboard();
 };
