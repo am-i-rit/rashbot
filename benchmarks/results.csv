@@ -1,0 +1,2 @@
+date,version,commit,opponent,opponent_elo,time_control,games,wins,draws,losses,score_percent,elo_difference,elo_error,notes
+2026-10-11,benchmark-v1,8c05f6b286fd67a5d8da00f4c46c30082f26bb85,Stockfish,1800,30+0.3,50,16,6,28,38.0,-85.04,103.89,Initial benchmark
