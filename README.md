@@ -150,7 +150,7 @@ Pondering and configurable `setoption` parameters are not currently supported.
 
 ## Playing on Lichess
 
-You can play against rashbot [here](https://lichess.org/@/rashbot), although right now this will only work when my computer is on. In the future I plan on running it 24/7 on either a Raspberry Pi or Cloud VPS.
+You can play against rashbot on Lichess [here](https://lichess.org/@/rashbot), although right now this will only work when my computer is on. In the future I might run it 24/7 on either a Raspberry Pi or Cloud VPS.
 
 ## Project structure
 
@@ -175,4 +175,3 @@ You can play against rashbot [here](https://lichess.org/@/rashbot), although rig
 - Search performance benchmarking and optimization
 - Optional pondering
 - Non-blocking search in the SDL GUI
-- Headless Linux deployment for continuous Lichess availability

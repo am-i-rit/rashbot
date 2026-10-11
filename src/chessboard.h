@@ -95,16 +95,17 @@ class Chessboard
 
     std::uint64_t getHash() const;
 
+    // methods for pieces
     std::uint8_t getPiece(std::uint8_t square) const;
     void setPiece(std::uint8_t piece, std::uint8_t square);
 
-    // make moves
+    // make and undo moves
     void move(const Move &move);
     void undo();
 
     Colour getTurn();
 
-    // methods for move gen
+    // methods for move generation
     void pseudoMoves(Move* moves, int& numMoves);
     bool isLegal(const Move& move);
     bool isAttacked(uint8_t square, uint8_t colour);

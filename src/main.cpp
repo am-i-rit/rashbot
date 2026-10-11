@@ -64,6 +64,7 @@ int main(int argc, char* argv[])
     return 0;
     */
 
+    // load starting position
     game.loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
     SDLState state;
@@ -73,15 +74,15 @@ int main(int argc, char* argv[])
     state.logW = 640;
     state.logH = 480;
 
-    if (!initialize(state))
-    {
+    // make sure things load properly
+    if (!initialize(state)) {
         return 1;
     }
     
-   if (!loadAssets(state, assets))
-    {
+   if (!loadAssets(state, assets)) {
         return 1;
     }
+
     // game loop
     bool running = true;
     while (running)
@@ -117,13 +118,13 @@ int main(int argc, char* argv[])
                     {
                         case SDLK_ESCAPE:
                         {
+                            // quit
                             running = false;
                             break;
                         }
                         case SDLK_BACKSPACE:
                         {   
-                            if (moveIndex > 0)
-                            {
+                            if (moveIndex > 0) {
                             game.undo();
                             --moveIndex;
                             }
@@ -131,6 +132,7 @@ int main(int argc, char* argv[])
                         }
                         case SDLK_SPACE:
                         {
+                            // flip board
                             state.boardFlipped = !state.boardFlipped;
                             break;
                         }
@@ -151,8 +153,7 @@ int main(int argc, char* argv[])
             Move engineMove =
                 search.findBestMove(game, engineDepth, -1);
 
-            if (engineMove.from < 64)
-            {
+            if (engineMove.from < 64) { // if valid move
                 moveStack[moveIndex] = engineMove;
                 ++moveIndex;
 
@@ -261,6 +262,7 @@ void handleMouseClick(SDLState &state, float windowX, float windowY)
     float mouseY;
     SDL_RenderCoordinatesFromWindow(state.renderer, windowX, windowY, &mouseX, &mouseY);
 
+    // converts co-ords of mouse click to board co-ords
     int screenCol = floor((mouseX - state.squareX) / state.squareSize);
     int screenRow = floor((mouseY - state.squareY) / state.squareSize);
 
@@ -466,6 +468,7 @@ void draw(SDLState &state, Assets &assets)
     // draw ui for pawn promotions
     if (state.promoteY == 0)
     {
+        // white promotions
         int screenCol, screenRow;
         boardToScreen(state, state.promoteX, 0, screenCol, screenRow);
         int screenDir;
@@ -493,6 +496,7 @@ void draw(SDLState &state, Assets &assets)
     }
     if (state.promoteY == 7)
     {
+        // black promotions
         int screenCol, screenRow;
         boardToScreen(state, state.promoteX, 7, screenCol, screenRow);
         int screenDir;
@@ -529,6 +533,7 @@ bool isWhitePiece(uint8_t piece)
 
 void boardToScreen(const SDLState &state, int boardCol, int boardRow, int &screenCol, int &screenRow)
 {
+    // converts board co-ords to screen to handle board flipping
     if (state.boardFlipped)
     {
         screenCol = 7 - boardCol;

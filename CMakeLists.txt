@@ -9,11 +9,19 @@ find_package(SDL3_image REQUIRED CONFIG)
 find_package(Threads REQUIRED)
 
 add_executable(rashbot
-    uci_main.cpp uci.cpp chessboard.cpp search.cpp)
+    src/uci_main.cpp 
+    src/uci.cpp 
+    src/chessboard.cpp 
+    src/search.cpp
+)
 
 
 add_executable(rashbot-gui 
-    main.cpp chessboard.cpp perft.cpp search.cpp)
+    src/main.cpp 
+    src/chessboard.cpp 
+    src/perft.cpp 
+    src/search.cpp
+)
 
 add_custom_command(TARGET rashbot-gui POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory

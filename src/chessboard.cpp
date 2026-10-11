@@ -12,6 +12,7 @@ std::uint64_t Chessboard::enPassantHash[8]{};
 
 Chessboard::Chessboard()
 {
+    // constructor
     // create random number generator for hashing
     static bool zobristInitialized = false;
     if (!zobristInitialized) {
@@ -134,6 +135,7 @@ Chessboard::Chessboard()
 
 void Chessboard::reset()
 {
+    // resets board to starting position
     stackIndex = 0;
     stateStack[0] = {};
 
@@ -164,6 +166,7 @@ void Chessboard::reset()
 
 bool Chessboard::loadFEN(const std::string& fen) 
 {
+    // sets board to position from a given fen string
     boardState newState{};
 
     std::stringstream stream;
@@ -320,7 +323,7 @@ bool Chessboard::loadFEN(const std::string& fen)
 
     newState.numHalfMoves = static_cast<uint8_t>(halfMoveCounter);
 
-    // Commit the new position only after everything was valid
+    // commit the new position only after everything was valid
     stackIndex = 0;
     stateStack[0] = newState;
     stateStack[0].zobristHash = calculateHash();
@@ -329,6 +332,7 @@ bool Chessboard::loadFEN(const std::string& fen)
 }
 
 uint64_t Chessboard::calculateHash() {
+    // calculates zobrist hash for a position
     uint64_t hash = 0;
 
     // piece hash
@@ -385,6 +389,7 @@ uint8_t Chessboard::getPiece(uint8_t square) const
 
 void Chessboard::setPiece(uint8_t piece, uint8_t square)
 {
+    // puts a piece on a square
     uint64_t mask = uint64_t(1) << square;
 
     uint8_t current = getPiece(square); 
@@ -516,18 +521,19 @@ void Chessboard::move(const Move& move)
     stateStack[stackIndex].zobristHash = calculateHash();
 }
 
-void Chessboard::undo()
-{
-    if (stackIndex > 0) --stackIndex;
+void Chessboard::undo() {
+    if (stackIndex > 0) {
+        --stackIndex;
+    } 
 }
 
-Colour Chessboard::getTurn()
-{
+Colour Chessboard::getTurn() {
     return stateStack[stackIndex].turn;
 }
 
-void Chessboard::pseudoMoves(Move* moves, int& numMoves)
-{
+void Chessboard::pseudoMoves(Move* moves, int& numMoves) {
+    // generates all pseudoMoves in a position 
+    // not all legal moves, as they dont account for checks, etc.
     numMoves = 0;
 
     // create various bitboards to help with generation
@@ -927,9 +933,9 @@ void Chessboard::pseudoMoves(Move* moves, int& numMoves)
 
 bool Chessboard::isLegal(const Move& move)
 {
-    // if (isDrawn()) return false;
+    // checks to see if a pseudomove is legal
 
-    Move moves[256]; // 218 is the theoretical max number of legal moves in a position but were looking at pseudomoves
+    Move moves[256]; // 218 is the theoretical max number of legal moves in a position but we're looking at pseudomoves
     int numMoves;
     pseudoMoves(moves, numMoves);
 
@@ -962,10 +968,10 @@ bool Chessboard::isLegal(const Move& move)
     return false;
 }
 
-
-// function to check whether a square is attacked by a colour
 bool Chessboard::isAttacked(uint8_t square, uint8_t colour)
 {
+    // function to check whether a square is attacked by a colour
+
     if (colour == WHITE)
     {
         // create a new bitboard with all pieces
@@ -1063,16 +1069,17 @@ bool Chessboard::isAttacked(uint8_t square, uint8_t colour)
 
 bool Chessboard::isCapture(const Move& move) const
 {
+    // function to check if a move is a capture
     uint64_t toBitboard = uint64_t(1) << move.to;
 
-    // A piece occupies the destination square.
+    // a piece occupies destination square
     for (int piece = 0; piece < 12; ++piece)
     {
         if (stateStack[stackIndex].bitboards[piece] & toBitboard)
             return true;
     }
 
-    // En passant: destination is empty, but a pawn is captured.
+    // en passant: destination is empty, but a pawn is captured
     uint8_t movedPiece = getPiece(move.from);
 
     if ((movedPiece == wPawn || movedPiece == bPawn) &&
