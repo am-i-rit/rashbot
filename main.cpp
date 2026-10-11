@@ -12,7 +12,7 @@ Chessboard game;
 Search search;
 
 Colour engineTurn = BLACK;
-uint8_t engineDepth = 6;
+uint8_t engineDepth = 7;
 
 struct SDLState
 {
@@ -63,6 +63,8 @@ int main(int argc, char* argv[])
     perftDivide(game, 1);
     return 0;
     */
+
+    game.loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
     SDLState state;
     Assets assets;
@@ -147,7 +149,7 @@ int main(int argc, char* argv[])
             game.gameResult() == EMPTY)
         {
             Move engineMove =
-                search.findBestMove(game, engineDepth);
+                search.findBestMove(game, engineDepth, -1);
 
             if (engineMove.from < 64)
             {

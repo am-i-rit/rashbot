@@ -162,6 +162,172 @@ void Chessboard::reset()
     stateStack[0].zobristHash = calculateHash();
 }
 
+bool Chessboard::loadFEN(const std::string& fen) 
+{
+    boardState newState{};
+
+    std::stringstream stream;
+    stream.str(fen);
+
+    std::string pieces;
+    std::string sideToMove;
+    std::string castleRights;
+    std::string passantSquare;
+    int halfMoveCounter;
+    int fullMoves;
+
+    if (!(stream >> pieces
+             >> sideToMove
+             >> castleRights
+             >> passantSquare
+             >> halfMoveCounter
+             >> fullMoves)) {
+        return false;
+    }
+
+    // put all the pieces on the board
+    int square = 0;
+    for (int i = 0; i < pieces.length(); ++i) {
+        int piece = EMPTY;
+        char c = pieces[i];
+
+        if (c >= '1' && c <= '8') {
+            square += c - '0';
+            continue;
+        }
+
+        if (c == '/') {
+            continue;
+        }
+
+        switch (c)
+        {
+        case 'p':
+            piece = bPawn;
+            break;
+        case 'n':
+            piece = bKnight;
+            break;
+        case 'b':
+            piece = bBishop; 
+            break;
+        case 'r':
+            piece = bRook;
+            break;
+        case 'q':
+            piece = bQueen;
+            break;
+        case 'k':
+            piece = bKing;
+            break;
+        case 'P':
+            piece = wPawn;
+            break;
+        case 'N':
+            piece = wKnight;
+            break;
+        case 'B':
+            piece = wBishop;
+            break;
+        case 'R':
+            piece = wRook;
+            break;
+        case 'Q':
+            piece = wQueen;
+            break;
+        case 'K':
+            piece = wKing;
+            break;           
+        default:
+            return false;
+        }
+
+        if (square >= 64)
+        {
+            return false;
+        }
+
+        newState.bitboards[piece] |= uint64_t(1) << square;
+        ++square;
+    }
+
+    // light validation
+    if (square != 64) return false;
+
+    // parse side to move
+    if (sideToMove == "w") {
+        newState.turn = WHITE;
+    }
+    else if (sideToMove == "b") {
+        newState.turn = BLACK;      
+    }
+    else {
+        return false;
+    }
+
+    // parse castling rights
+    if (castleRights != "-") {
+        for (int i = 0; i < castleRights.length(); ++i) {
+            char c = castleRights[i];
+            if (c == 'K') newState.wKingside = true;
+            else if (c == 'Q') newState.wQueenside = true;
+            else if (c == 'k') newState.bKingside = true;
+            else if (c == 'q') newState.bQueenside = true;
+            else return false;
+        }
+    }
+
+    // parse passant square
+    if (passantSquare == "-")
+    {
+        newState.enpTarget = 0;
+    }
+    else
+    {
+        if (passantSquare.length() != 2)
+        {
+            return false;
+        }
+
+        char fileCharacter = passantSquare[0];
+        char rankCharacter = passantSquare[1];
+
+        if (fileCharacter < 'a' || fileCharacter > 'h' ||
+            rankCharacter != '3' && rankCharacter != '6')
+        {
+            return false;
+        }
+
+        int file = fileCharacter - 'a';
+        int rank = rankCharacter - '0';
+
+        int passantIndex = (8 - rank) * 8 + file;
+
+        newState.enpTarget =
+            uint64_t(1) << passantIndex;
+    }
+
+    // parse half-move counter
+    if (halfMoveCounter < 0)
+    {
+        return false;
+    }
+
+    if (halfMoveCounter > 100)
+    {
+        halfMoveCounter = 100;
+    }
+
+    newState.numHalfMoves = static_cast<uint8_t>(halfMoveCounter);
+
+    // Commit the new position only after everything was valid
+    stackIndex = 0;
+    stateStack[0] = newState;
+    stateStack[0].zobristHash = calculateHash();
+
+    return true;
+}
+
 uint64_t Chessboard::calculateHash() {
     uint64_t hash = 0;
 

@@ -102,40 +102,71 @@ std::string UCI::moveToString(const Move& move) const
 void UCI::setPosition(const std::string& command)
 {
     std::istringstream input(command);
+
     std::string token;
+    std::string positionType;
 
-    input >> token; // "position"
-    input >> token; // "startpos" or "fen"
+    input >> token;        // "position"
+    input >> positionType; // "startpos" or "fen"
 
-    if (token == "startpos")
+    if (positionType == "startpos")
     {
         board.reset();
     }
-    else if (token == "fen")
+    else if (positionType == "fen")
     {
-        /*
-         * Add board.loadFEN(...) later.
-         * For the first version, support startpos only.
-         */
+        std::string fen;
+        std::string field;
+
+        for (int i = 0; i < 6; ++i)
+        {
+            if (!(input >> field))
+            {
+                std::cerr << "Invalid FEN command\n";
+                return;
+            }
+
+            if (i > 0)
+            {
+                fen += ' ';
+            }
+
+            fen += field;
+        }
+
+        if (!board.loadFEN(fen))
+        {
+            std::cerr << "Invalid FEN\n";
+            return;
+        }
+    }
+    else
+    {
+        std::cerr << "Invalid position command\n";
         return;
     }
 
-    // Find the optional "moves" part.
-    while (input >> token)
+    // there may be no moves after the position
+    if (!(input >> token))
     {
-        if (token == "moves")
-        {
-            break;
-        }
+        return;
     }
 
+    if (token != "moves")
+    {
+        std::cerr << "Expected moves after position\n";
+        return;
+    }
+    
+    // apply every move listed after "moves"
     while (input >> token)
     {
         Move move = parseMove(token);
 
         if (move.from >= 64 || !board.isLegal(move))
         {
-            std::cerr << "Invalid UCI move: " << token << '\n';
+            std::cerr << "Invalid UCI move: "
+                      << token << '\n';
             return;
         }
 

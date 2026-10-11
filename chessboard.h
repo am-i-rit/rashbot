@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <array>
+#include <string>
+#include <sstream>
 
 enum Piece: uint8_t
 {
@@ -88,6 +90,8 @@ class Chessboard
  public:
     // reset
     void reset();
+
+    bool loadFEN(const std::string& fen);
 
     std::uint64_t getHash() const;
 
