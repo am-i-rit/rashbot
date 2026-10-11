@@ -3,6 +3,7 @@
 #include "helper.h"
 #include <cmath>
 #include <random>
+#include <cassert>
 
 std::uint64_t Chessboard::pieceHash[12][64]{};
 std::uint64_t Chessboard::turnHash{};
@@ -231,6 +232,7 @@ void Chessboard::setPiece(uint8_t piece, uint8_t square)
 void Chessboard::move(const Move& move)
 {
     // push new state
+    assert(stackIndex + 1 < static_cast<int>(stateStack.size()));
     int newIndex = stackIndex + 1;
     stateStack[newIndex] = stateStack[stackIndex];
     stackIndex = newIndex;
